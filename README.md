@@ -119,6 +119,8 @@ Wiki data can be stored in **DynamoDB** (pages, revisions, comments) or kept **i
 
 Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS needed).
 
+**Revision workflow:** Saving an edit on an existing page creates a **proposed** revision (status `pending`); the page content does not change until someone **accepts** it. New pages get the first revision **approved** immediately. Any signed-in user can accept or reject pending revisions. Revisions list shows status (pending / accepted / rejected) and Accept / Reject buttons for pending items.
+
 ---
 
 ## Roadmap
@@ -137,7 +139,8 @@ Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS ne
 * [x] Add Cognito integrated.
 * [x] Get POST/UPDATE working.
 * [x] Add cloud-based doc store (e.g. DynamoDB or S3).
-* [ ] Revision workflow (propose → pending → accept/reject).
+* [x] Revision history (store and list revisions per page; who edited when).
+* [x] Revision workflow (propose → pending → accept/reject).
 * [ ] Clean up and release.
 * [x] Add fully automated deploy scripts
 * [x] Add project versioning

@@ -66,7 +66,7 @@ History of page content changes. One item per revision.
 | userId | String | | Cognito sub |
 | summary | String | | Short change description |
 | diff | String | | Optional diff text |
-| status | String | | approved, pending, rejected |
+| status | String | | **approved** (accepted), **pending** (proposed), **rejected** — page content updates only when a revision is approved |
 | parentRevisionId | String | | For revert chain |
 
 ---

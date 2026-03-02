@@ -21,9 +21,17 @@ function run() {
 
 async function saveEntry() {
   var textarea = document.getElementById('sourceTA');
+  var commentInput = document.getElementById('revision-comment');
   if (!textarea) return;
 
   var content = textarea.value || '';
+  var comment = commentInput ? (commentInput.value || '').trim() : '';
+  if (!comment) {
+    alert('Revision comment is required. Describe what you changed.');
+    if (commentInput) commentInput.focus();
+    return;
+  }
+
   var titleEl = document.querySelector('.resort-title');
   var title = titleEl ? titleEl.textContent.trim() : YWIKI_PATH;
 
@@ -39,7 +47,8 @@ async function saveEntry() {
     path: YWIKI_PATH,
     title: title,
     user: user || 'anonymous',
-    content: content
+    content: content,
+    comment: comment
   };
 
   var headers = { 'Content-Type': 'application/json' };
@@ -55,10 +64,23 @@ async function saveEntry() {
     });
 
     if (resp.ok) {
-      alert('Saved!');
-      loadRevisions();
+      if (resp.status === 202) {
+        alert('Proposed. Pending accept/reject.');
+        loadRevisions();
+        loadComments();
+        if (commentInput) commentInput.value = '';
+      } else {
+        alert('Saved!');
+        loadRevisions();
+        loadEntry();
+        loadComments();
+        if (commentInput) commentInput.value = '';
+      }
     } else if (resp.status === 401) {
       alert('Sign in required to save changes.');
+    } else if (resp.status === 400) {
+      var err = await resp.json().catch(function () { return {}; });
+      alert(err.message || 'Comment required.');
     } else {
       alert('Save failed: ' + resp.status + ' ' + (resp.statusText || ''));
     }
@@ -91,18 +113,108 @@ async function loadRevisions() {
     if (!resp.ok) return;
     var data = await resp.json();
     var list = (data && data.revisions) ? data.revisions : [];
+    var currentUserId = (window.ywikiAuth && typeof ywikiAuth.getUserId === 'function') ? ywikiAuth.getUserId() : null;
     if (list.length === 0) {
       el.innerHTML = '<p class="resort-list-empty">No revisions yet.</p>';
     } else {
       el.innerHTML = list.map(function (r) {
         var ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
-        var user = r.userId || 'anonymous';
+        var user = (r.userId || 'anonymous').replace(/</g, '&lt;');
         var summary = (r.summary || 'Edit').replace(/</g, '&lt;');
-        return '<div class="resort-revision-item"><span class="resort-revision-time">' + ts + '</span> <span class="resort-revision-user">' + user + '</span>: ' + summary + '</div>';
+        var status = (r.status || 'approved').toLowerCase();
+        var statusLabel = status === 'pending' ? 'pending' : status === 'rejected' ? 'rejected' : 'accepted';
+        var statusClass = 'resort-revision-status resort-revision-status-' + statusLabel;
+        var actions = '';
+        if (status === 'pending') {
+          var isOwnRevision = currentUserId && r.userId && currentUserId === r.userId;
+          if (!isOwnRevision) {
+            actions = ' <button type="button" class="resort-revision-action resort-revision-accept" data-revision-id="' + (r.revisionId || '').replace(/"/g, '&quot;') + '" onclick="acceptRevision(this.getAttribute(\'data-revision-id\'))">Accept</button>';
+          }
+          actions += ' <button type="button" class="resort-revision-action resort-revision-reject" data-revision-id="' + (r.revisionId || '').replace(/"/g, '&quot;') + '" onclick="rejectRevision(this.getAttribute(\'data-revision-id\'))">Reject</button>';
+        }
+        return '<div class="resort-revision-item"><span class="resort-revision-time">' + ts + '</span> <span class="resort-revision-user">' + user + '</span>: ' + summary + ' <span class="' + statusClass + '">(' + statusLabel + ')</span>' + actions + '</div>';
       }).join('');
     }
   } catch (e) {
     el.innerHTML = '<p class="resort-list-empty">Could not load revisions.</p>';
+  }
+}
+
+async function acceptRevision(revisionId) {
+  if (!revisionId) return;
+  var token = (window.ywikiAuth && typeof ywikiAuth.getToken === 'function') ? ywikiAuth.getToken() : null;
+  if (!token) {
+    alert('Sign in required to accept a revision.');
+    return;
+  }
+  var comment = window.prompt('Comment (required): Why are you accepting this revision?');
+  if (comment === null) return;
+  comment = (comment || '').trim();
+  if (!comment) {
+    alert('Comment is required.');
+    return;
+  }
+  try {
+    var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH) + '/revisions/' + encodeURIComponent(revisionId) + '/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ comment: comment })
+    });
+    if (resp.ok) {
+      loadRevisions();
+      loadEntry();
+      loadComments();
+    } else if (resp.status === 401) {
+      alert('Sign in required.');
+    } else if (resp.status === 403) {
+      var err = await resp.json().catch(function () { return {}; });
+      alert(err.message || 'You cannot accept your own revision; another user must accept it.');
+    } else if (resp.status === 400) {
+      alert('Comment is required.');
+    } else if (resp.status === 404) {
+      alert('Revision not found or already handled.');
+    } else {
+      alert('Failed to accept: ' + resp.status);
+    }
+  } catch (e) {
+    alert('Failed to accept revision.');
+  }
+}
+
+async function rejectRevision(revisionId) {
+  if (!revisionId) return;
+  var token = (window.ywikiAuth && typeof ywikiAuth.getToken === 'function') ? ywikiAuth.getToken() : null;
+  if (!token) {
+    alert('Sign in required to reject a revision.');
+    return;
+  }
+  var comment = window.prompt('Comment (required): Why are you rejecting this revision?');
+  if (comment === null) return;
+  comment = (comment || '').trim();
+  if (!comment) {
+    alert('Comment is required.');
+    return;
+  }
+  try {
+    var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH) + '/revisions/' + encodeURIComponent(revisionId) + '/reject', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ comment: comment })
+    });
+    if (resp.ok) {
+      loadRevisions();
+      loadComments();
+    } else if (resp.status === 401) {
+      alert('Sign in required.');
+    } else if (resp.status === 400) {
+      alert('Comment is required.');
+    } else if (resp.status === 404) {
+      alert('Revision not found or already handled.');
+    } else {
+      alert('Failed to reject: ' + resp.status);
+    }
+  } catch (e) {
+    alert('Failed to reject revision.');
   }
 }
 

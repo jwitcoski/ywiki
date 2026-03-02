@@ -70,6 +70,19 @@
     }
   }
 
+  function getUserIdFromToken() {
+    try {
+      var token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) return null;
+      var payload = token.split('.')[1];
+      if (!payload) return null;
+      var json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return json.sub || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   function saveToken(token) {
     if (token) {
       sessionStorage.setItem(TOKEN_KEY, token);
@@ -91,6 +104,7 @@
     isConfigured: function () { return config.configured === true; },
     getToken: function () { return sessionStorage.getItem(TOKEN_KEY); },
     getUser: function () { return sessionStorage.getItem(USER_KEY) || ''; },
+    getUserId: function () { return getUserIdFromToken(); },
     getLoginUrl: getLoginUrl,
     signIn: function () {
       var url = getLoginUrl();

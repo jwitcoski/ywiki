@@ -217,6 +217,14 @@ body {
   margin: 0 0 0.5rem 0;
 }
 
+.resort-workflow-hint {
+  font-size: 0.85rem;
+  color: #555;
+  line-height: 1.45;
+  margin: 0 0 0.75rem 0;
+  max-width: 42rem;
+}
+.resort-workflow-hint strong { color: #333; }
 .resort-edit-source {
   display: block;
   width: 100%;
@@ -234,6 +242,25 @@ body {
   outline: none;
   border-color: var(--resort-subtitle-color);
   box-shadow: 0 0 0 2px rgba(91, 143, 180, 0.2);
+}
+
+.resort-edit-revision-comment {
+  margin: 0.75rem 0 0.5rem 0;
+}
+.resort-edit-revision-comment label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--resort-footer-color);
+  margin-bottom: 0.25rem;
+}
+.resort-revision-comment-input {
+  width: 100%;
+  max-width: 32rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 .resort-edit-btn {
@@ -296,6 +323,31 @@ body {
   font-weight: 500;
   color: var(--resort-title-color);
 }
+
+.resort-revision-status {
+  font-size: 0.85em;
+  margin-left: 0.35rem;
+}
+.resort-revision-status-pending { color: #b8860b; }
+.resort-revision-status-accepted { color: #2e7d32; }
+.resort-revision-status-rejected { color: #c62828; }
+
+.resort-revision-action {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+}
+.resort-revision-action:hover {
+  background: #e8e8e8;
+}
+.resort-revision-accept { border-color: #2e7d32; color: #2e7d32; }
+.resort-revision-accept:hover { background: #e8f5e9; }
+.resort-revision-reject { border-color: #c62828; color: #c62828; }
+.resort-revision-reject:hover { background: #ffebee; }
 
 .resort-comment-item {
   padding: 0.6rem 0;
