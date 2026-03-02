@@ -15,6 +15,8 @@
  */
 package com.acmerocket.ywiki;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -36,6 +38,24 @@ public class ProjectProperties {
 		} 
 		catch (IOException e) {
 			LOG.error("Error loading properties", e);
+		}
+		// Local overrides (e.g. Cognito) from project root; not in repo
+		try {
+			File local = new File(System.getProperty("user.dir"), "project.local.properties");
+			if (local.canRead()) {
+				Properties localProps = new Properties();
+				try (FileInputStream fin = new FileInputStream(local)) {
+					localProps.load(fin);
+				}
+				for (Map.Entry<Object, Object> entry : localProps.entrySet()) {
+					INST.put(entry.getKey().toString(), entry.getValue().toString());
+				}
+				LOG.info("Loaded local overrides from {}", local.getAbsolutePath());
+			} else {
+				LOG.info("No project.local.properties at {} (Cognito optional; create from project.local.properties.example to enable sign-in)", local.getAbsolutePath());
+			}
+		} catch (IOException e) {
+			LOG.debug("No project.local.properties or error reading it: {}", e.getMessage());
 		}
 	}
 	

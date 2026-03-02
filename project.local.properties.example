@@ -1,0 +1,6 @@
+# Cognito overrides — copy to project.local.properties and fill in your values.
+# project.local.properties is gitignored; do not commit it with real secrets.
+cognito.userPoolId=us-east-1_xxxxxxxxx
+cognito.region=us-east-1
+cognito.clientId=your-client-id
+cognito.domain=https://your-domain-prefix.auth.us-east-1.amazoncognito.com

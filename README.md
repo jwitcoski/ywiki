@@ -2,76 +2,57 @@
 
 Fork of [philion/ywiki](https://github.com/philion/ywiki), maintained as a standalone wiki and later to be ported into the Ski Atlas backend and frontend. Repo: [jwitcoski/ywiki](https://github.com/jwitcoski/ywiki).
 
-Pronounced "lambda-wiki", but spelled with a 'y' because it was easier than typing out "lambda". A simple Markdown wiki in [Java](https://docs.oracle.com/javase/8/docs/api/), [Jersey](https://jersey.github.io/), and [AWS Lambda](https://aws.amazon.com/lambda/) (via [aws-serverless-java-container](https://github.com/awslabs/aws-serverless-java-container)).
+A simple Markdown wiki: **Node (Express)** server and static frontend. Optional Cognito auth for `POST /wiki`. The original **Java (Jersey/Lambda)** app remains in `src/main/` for Lambda deploy if needed.
 
 **What's in this repo**
 
-* **Resort-entry UI** — Header, stats box, map image, and Markdown body (e.g. Montage Mountain); edit body and click Convert to preview.
-* **Cognito (optional)** — Sign in / Sign out in the top-right; when configured, `POST /wiki` requires a valid JWT. When not configured, the UI shows "Sign in (Cognito not configured)".
-* **Maven Wrapper** — `mvnw.cmd` (Windows) so you can build and run without installing Maven.
-* **Static + API** — Serves `/static/*` (HTML, CSS, JS, images) and `/version`, `/auth/config`, `/wiki` (GET/POST).
+* **Resort-entry UI** — Header, stats box, map image, Markdown body (e.g. Montage Mountain); edit and click Convert to preview.
+* **Cognito (optional)** — Sign in / Sign out in the top-right; when configured, `POST /wiki` requires a valid JWT.
+* **Node server** — Primary runtime. Express on port 8080: `/`, `/static/*`, `/version`, `/auth/config`, `/wiki` (GET/POST).
+* **Java app** — Optional. Maven/Jersey/Lambda in `src/main/` for `deploy.sh` / Lambda.
 
-Seed: [awslabs/aws-serverless-java-container pet-store sample](https://github.com/awslabs/aws-serverless-java-container/tree/master/samples/jersey/pet-store).
+## Quick start (Node)
+
+    npm install
+    npm start
+
+Open **http://localhost:8080**. Cognito: copy [.env.example](.env.example) to `.env` or use `project.local.properties` (see [Cognito](#cognito-optional)); restart after changing config.
 
 ## Setup
 
-Make sure the following are installed:
+### Node (primary)
 
-* [Java 1.8](http://jdk.java.net/8/)
-* [Maven](https://maven.apache.org/)
-* [awscli](https://aws.amazon.com/cli/) 
+* [Node.js](https://nodejs.org/) 14+
 
-### homebrew
+    npm install
+    npm start
 
-If you have [homebrew](https://brew.sh) installed, use the following
+Server runs at **http://localhost:8080**. Use **http://localhost:8080/** or **http://localhost:8080/static/index.html** for the UI.
 
-    brew update
-    brew cask install java
-    brew install maven
-    brew install awscli
+**Cognito:** Set values in `project.local.properties` (project root) or in `.env` (see [.env.example](.env.example)); restart the server. Same config works for the Java app if you run it.
 
-## Building & Running
+**Port in use?** Stop any other process on 8080 (e.g. the Java server) or run on another port: `$env:PORT=3000; npm start` (PowerShell).
 
-You can build and run **without installing Maven** by using the Maven Wrapper (recommended on Windows):
+### Java (optional — Lambda / deploy.sh)
+
+Use when you need the JAR or Lambda deploy. Install [Java](http://jdk.java.net/8/), [Maven](https://maven.apache.org/), and [awscli](https://aws.amazon.com/cli/). With [Homebrew](https://brew.sh): `brew install maven awscli` (and a JDK cask if needed).
+
+Build and run:
 
     .\mvnw.cmd clean package
     .\mvnw.cmd exec:java
 
-Or with Maven installed:
-
-    mvn clean package
-    mvn exec:java
-
-**Windows:** Ensure `JAVA_HOME` is set to your JDK installation (e.g. `C:\Program Files\Java\jdk-24`). If you only have `java` on your PATH, set it to the folder that contains `bin\java.exe`:
-
-    $env:JAVA_HOME = "C:\Program Files\Java\jdk-24"   # PowerShell; adjust path to your JDK
-
-This will start the Grizzly server. Open:
-
-* **http://localhost:8080/** or **http://localhost:8080/static/index.html** — resort-entry page (auth widget top-right).
-* **http://localhost:8080/version** — version string.
+**Windows:** Set `JAVA_HOME` to your JDK (e.g. `$env:JAVA_HOME = "C:\Program Files\Java\jdk-24"`). Then open http://localhost:8080 (same port as Node — stop one before starting the other).
 
 ## Deploying
 
-A simple deploy script exists to deploy the constructed JAR. Edit the deploy script to confirm:
-
-* deployBucket - name of S3 bucket to use for holding deployable JARs
-
-Then run:
-
-    ./deploy.sh
-    
-This will:
-
-1. create an S3 bucket for deployments
-2. package and upload the versioned package
-3. deploy the version
-4. get the deployed URL
-5. test the correct version was deployed
+The **deploy script** builds and deploys the **Java** JAR to Lambda. Edit `deploy.sh`: set `deployBucket` to your S3 bucket. Then run `./deploy.sh` (creates bucket, packages, uploads, deploys, prints URL). For a **Node**-based deploy you’d use a different process (e.g. Elastic Beanstalk, EC2, or a Node Lambda).
 
 ## Cognito (optional)
 
 When configured, **Cognito** protects write operations (e.g. `POST /wiki`) with JWT validation. The UI shows **Sign in** / **Sign out** in the top-right and stores the ID token for API calls. When Cognito is *not* configured, the widget shows **“Sign in (Cognito not configured)”** and all endpoints remain open.
+
+**Step-by-step:** See **[COGNITO_SETUP.md](COGNITO_SETUP.md)** for creating a User Pool and App Client in the AWS Console.
 
 ### 1. Create a User Pool and App Client
 
@@ -85,21 +66,35 @@ When configured, **Cognito** protects write operations (e.g. `POST /wiki`) with 
 
 ### 2. Configure ywiki
 
-Set these (env vars override `src/main/resources/project.properties`):
+Use **Node** (`npm start`) or **Java** (`.\mvnw.cmd exec:java`). Config is shared.
+
+**Option A — `project.local.properties` (recommended)**
+
+In the project root, create `project.local.properties` (or copy from `project.local.properties.example`):
+
+    cognito.userPoolId=us-east-1_xxxxxxxxx
+    cognito.region=us-east-1
+    cognito.clientId=your-client-id
+    cognito.domain=https://your-domain-prefix.auth.us-east-1.amazoncognito.com
+
+File is gitignored. Restart the server; `/auth/config` will return `configured: true` and **Sign in** will work.
+
+**Option B — Environment variables**
 
 | Variable | Description |
 |----------|-------------|
 | `COGNITO_USER_POOL_ID` | User pool ID (e.g. `us-east-1_xxxxx`) |
 | `COGNITO_REGION` | AWS region (e.g. `us-east-1`) |
 | `COGNITO_CLIENT_ID` | App client ID |
-| `COGNITO_DOMAIN` | Full Hosted UI URL, or the domain *prefix* only (e.g. `ywiki-auth` → `https://ywiki-auth.auth.region.amazoncognito.com`) |
+| `COGNITO_DOMAIN` | Full Hosted UI URL or domain prefix only |
 
-**Example (PowerShell):**
+**Example (PowerShell, Node):**
 
     $env:COGNITO_USER_POOL_ID = "us-east-1_xxxxxxxxx"
     $env:COGNITO_REGION = "us-east-1"
     $env:COGNITO_CLIENT_ID = "your-client-id"
     $env:COGNITO_DOMAIN = "https://ywiki-auth.auth.us-east-1.amazoncognito.com"
+    npm start
 
 If Cognito is **not** configured, all endpoints remain open (no auth required).
 

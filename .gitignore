@@ -16,3 +16,7 @@ buildNumber.properties
 .settings/
 
 node_modules/
+
+# Local config (do not commit secrets)
+project.local.properties
+.env
