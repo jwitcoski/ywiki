@@ -8,7 +8,7 @@ A simple Markdown wiki: **Node (Express)** server and static frontend. Optional 
 
 * **Resort-entry UI** — Header, stats box, map image, Markdown body (e.g. Montage Mountain); edit and click Convert to preview.
 * **Cognito (optional)** — Sign in / Sign out in the top-right; when configured, `POST /wiki` requires a valid JWT.
-* **Node server** — Primary runtime. Express on port 8080: `/`, `/static/*`, `/version`, `/auth/config`, `/wiki` (GET/POST), `/wiki/:pageId/revisions` (GET), `/wiki/:pageId/comments` (GET/POST).
+* **Node server** — Primary runtime. Express on port 8080: `/`, `/static/*`, `/version`, `/auth/config`, `/wiki` (GET/POST), `/wiki/:pageId/revisions` (GET), accept/reject (POST), `/wiki/:pageId/comments` (GET/POST).
 * **Java app** — Optional. Maven/Jersey/Lambda in `src/main/` for `deploy.sh` / Lambda.
 
 ## Quick start (Node)
@@ -119,7 +119,7 @@ Wiki data can be stored in **DynamoDB** (pages, revisions, comments) or kept **i
 
 Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS needed).
 
-**Revision workflow:** Saving an edit on an existing page creates a **proposed** revision (status `pending`); the page content does not change until someone **accepts** it. New pages get the first revision **approved** immediately. Any signed-in user can accept or reject pending revisions. Revisions list shows status (pending / accepted / rejected) and Accept / Reject buttons for pending items.
+**Revision workflow:** Saving an edit on an existing page creates a **proposed** revision (status `pending`); the page content does not change until someone **accepts** it. New pages get the first revision **approved** immediately. Only **another** signed-in user can accept a pending revision (you cannot accept your own). You can reject your own proposal. Revisions list shows status and Accept / Reject buttons (Accept only for others' revisions).
 
 ---
 
@@ -141,7 +141,7 @@ Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS ne
 * [x] Add cloud-based doc store (e.g. DynamoDB or S3).
 * [x] Revision history (store and list revisions per page; who edited when).
 * [x] Revision workflow (propose → pending → accept/reject).
-* [ ] Clean up and release.
+* [x] Clean up and release.
 * [x] Add fully automated deploy scripts
 * [x] Add project versioning
 * [ ] Add log-query script
@@ -205,70 +205,3 @@ Note: It would be great to use the same lib for both edit and display.
 See also: http://www.developersfeed.com/awesome-javascript-wysiwyg-markdown-editors/
 
 ### Markdown Rendering
-
-
-----
-
-# Original Pet Store Docs
-
-A basic pet store written with the [Jersey framework](https://jersey.java.net/). The `LambdaHandler` object is the main entry point for Lambda.
-
-The application can be deployed in an AWS account using the [Serverless Application Model](https://github.com/awslabs/serverless-application-model). The `sam.yaml` file in the root folder contains the application definition
-
-## Installation
-To build and install the sample application you will need [Maven](https://maven.apache.org/) and the [AWS CLI](https://aws.amazon.com/cli/) installed on your computer.
-
-In a shell, navigate to the sample's folder and use maven to build a deployable jar.
-```
-$ mvn package
-```
-
-This command should generate a `serverless-jersey-example-1.0-SNAPSHOT.jar` in the `target` folder. Now that we have generated the jar file, we can use the AWS CLI to package the template for deployment. 
-
-You will need an S3 bucket to store the artifacts for deployment. Once you have created the S3 bucket, run the following command from the sample's folder:
-
-```
-$ aws cloudformation package --template-file sam.yaml --output-template-file output-sam.yaml --s3-bucket <YOUR S3 BUCKET NAME>
-Uploading to xxxxxxxxxxxxxxxxxxxxxxxxxx  6464692 / 6464692.0  (100.00%)
-Successfully packaged artifacts and wrote output template to file output-sam.yaml.
-Execute the following command to deploy the packaged template
-aws cloudformation deploy --template-file /your/path/output-sam.yaml --stack-name <YOUR STACK NAME>
-```
-
-As the command output suggests, you can now use the cli to deploy the application. Choose a stack name and run the `aws cloudformation deploy` command from the output of the package command.
- 
-```
-$ aws cloudformation deploy --template-file output-sam.yaml --stack-name ServerlessJerseySample --capabilities CAPABILITY_IAM
-```
-
-Once the application is deployed, you can describe the stack to show the API endpoint that was created. The endpoint should be the `JerseyPetStoreApi` key of the `Outputs` property:
-
-```
-$ aws cloudformation describe-stacks --stack-name ServerlessJerseySample
-{
-    "Stacks": [
-        {
-            "StackId": "arn:aws:cloudformation:us-west-2:xxxxxxxx:stack/JerseySample/xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxx", 
-            "Description": "Example Pet Store API written in jersey with the aws-serverless-java-container library", 
-            "Tags": [], 
-            "Outputs": [
-                {
-                    "Description": "URL for application", 
-                    "OutputKey": "JerseyPetStoreApi", 
-                    "OutputValue": "https://xxxxxxx.execute-api.us-west-2.amazonaws.com/Prod/pets"
-                }
-            ], 
-            "CreationTime": "2016-12-13T22:59:31.552Z", 
-            "Capabilities": [
-                "CAPABILITY_IAM"
-            ], 
-            "StackName": "JerseySample", 
-            "NotificationARNs": [], 
-            "StackStatus": "UPDATE_COMPLETE"
-        }
-    ]
-}
-
-```
-
-Copy the `OutputValue` into a browser to test a first request.
