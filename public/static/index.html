@@ -51,6 +51,7 @@
     <h2 class="resort-edit-title">Edit body (Markdown)</h2>
     <textarea id="sourceTA" class="resort-edit-source" rows="8" placeholder="Write the resort description in Markdown. Use **bold**, *italic*, and line breaks. First letter will appear as a drop cap.">Montage Mountain Ski Area sits in northeastern Pennsylvania with 225 acres of skiable terrain and 55 trails spread across 382 acres. Six lifts—including five chair lifts and one magic carpet—serve terrain from novice to expert, with the longest run at 0.05 mi and the longest lift at 0.81 mi. Add your own description below and click Convert to update the body text.</textarea>
     <button type="button" class="resort-edit-btn" onclick="run()">Convert</button>
+    <button type="button" class="resort-edit-btn" onclick="saveEntry()">Save</button>
   </section>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
@@ -58,7 +59,10 @@
   <script src="js/script.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      ywikiAuth.init(function () { ywikiAuth.renderWidget('resort-auth-widget'); });
+      ywikiAuth.init(function () {
+        ywikiAuth.renderWidget('resort-auth-widget');
+        loadEntry();
+      });
     });
   </script>
 </body>

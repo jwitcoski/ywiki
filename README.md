@@ -114,7 +114,7 @@ If Cognito is **not** configured, all endpoints remain open (no auth required).
 * [x] Add simple SPA editor, host resources locally.
 * [x] Resort-entry layout (stats, map image, Markdown body).
 * [x] Add Cognito integrated.
-* [ ] Get POST/UPDATE working.
+* [x] Get POST/UPDATE working.
 * [ ] Add cloud-based doc store (e.g. DynamoDB or S3).
 * [ ] Revision workflow (propose → pending → accept/reject).
 * [ ] Clean up and release.
