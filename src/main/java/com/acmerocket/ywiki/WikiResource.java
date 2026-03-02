@@ -22,6 +22,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 
 import com.acmerocket.ywiki.model.WikiEntry;
 
@@ -40,8 +42,9 @@ public class WikiResource {
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response create(final WikiEntry entry) {
-        LOG.info("POST: {}", entry);
+    public Response create(final WikiEntry entry, @Context ContainerRequestContext requestContext) {
+        CognitoPrincipal principal = (CognitoPrincipal) requestContext.getProperty(CognitoAuthFilter.REQUEST_PROPERTY_PRINCIPAL);
+        LOG.info("POST: {} by {}", entry, principal != null ? principal.getSub() : "anonymous");
         
         // TODO error checking?
         this.dao.update(entry);

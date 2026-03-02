@@ -1,12 +1,17 @@
 # ywiki
 
-Fork of [philion/ywiki](https://github.com/philion/ywiki), maintained as a standalone wiki and later to be ported into the Ski Atlas backend and frontend.
+Fork of [philion/ywiki](https://github.com/philion/ywiki), maintained as a standalone wiki and later to be ported into the Ski Atlas backend and frontend. Repo: [jwitcoski/ywiki](https://github.com/jwitcoski/ywiki).
 
-Pronounced "lambda-wiki", but spelled with a 'y' because it was easier that typing out "lambda", and *much* easier than figuring out the Unicode every time.
+Pronounced "lambda-wiki", but spelled with a 'y' because it was easier than typing out "lambda". A simple Markdown wiki in [Java](https://docs.oracle.com/javase/8/docs/api/), [Jersey](https://jersey.github.io/), and [AWS Lambda](https://aws.amazon.com/lambda/) (via [aws-serverless-java-container](https://github.com/awslabs/aws-serverless-java-container)).
 
-This is a simple Markdown wiki, in [Java](https://docs.oracle.com/javase/8/docs/api/), [Jersey](https://jersey.github.io/), [AWS Lambda](https://aws.amazon.com/lambda/), and [aws-serverless-java](https://github.com/awslabs/aws-serverless-java-container). It is designed to demonstrate fully automated build and deploy to AWS Lambda, as well as simple monitoring and metrics (devops).
+**What's in this repo**
 
-Starting with https://github.com/awslabs/aws-serverless-java-container/tree/master/samples/jersey/pet-store as a seed project.
+* **Resort-entry UI** — Header, stats box, map image, and Markdown body (e.g. Montage Mountain); edit body and click Convert to preview.
+* **Cognito (optional)** — Sign in / Sign out in the top-right; when configured, `POST /wiki` requires a valid JWT. When not configured, the UI shows "Sign in (Cognito not configured)".
+* **Maven Wrapper** — `mvnw.cmd` (Windows) so you can build and run without installing Maven.
+* **Static + API** — Serves `/static/*` (HTML, CSS, JS, images) and `/version`, `/auth/config`, `/wiki` (GET/POST).
+
+Seed: [awslabs/aws-serverless-java-container pet-store sample](https://github.com/awslabs/aws-serverless-java-container/tree/master/samples/jersey/pet-store).
 
 ## Setup
 
@@ -41,9 +46,10 @@ Or with Maven installed:
 
     $env:JAVA_HOME = "C:\Program Files\Java\jdk-24"   # PowerShell; adjust path to your JDK
 
-This will wrap the Jersey instance in a Grizzly server and run at: 
+This will start the Grizzly server. Open:
 
-* http://localhost:8080/static/index.html
+* **http://localhost:8080/** or **http://localhost:8080/static/index.html** — resort-entry page (auth widget top-right).
+* **http://localhost:8080/version** — version string.
 
 ## Deploying
 
@@ -63,6 +69,42 @@ This will:
 4. get the deployed URL
 5. test the correct version was deployed
 
+## Cognito (optional)
+
+When configured, **Cognito** protects write operations (e.g. `POST /wiki`) with JWT validation. The UI shows **Sign in** / **Sign out** in the top-right and stores the ID token for API calls. When Cognito is *not* configured, the widget shows **“Sign in (Cognito not configured)”** and all endpoints remain open.
+
+### 1. Create a User Pool and App Client
+
+1. In [AWS Console](https://console.aws.amazon.com/cognito/) → **User Pools** → **Create user pool**.
+2. Choose **Cognito user pool** → set sign-in options (e.g. Email).
+3. Create an **App client** (e.g. "ywiki"); note the **Client ID**.
+4. Under **App integration** → **Domain name**, create a domain (e.g. `ywiki-auth`) and note the full URL (e.g. `https://ywiki-auth.auth.us-east-1.amazoncognito.com`).
+5. In **App client** → **Hosted UI** settings, add a **Callback URL** and **Sign-out URL**:
+   - Callback: `http://localhost:8080/static/callback.html` (local) and your deployed base URL + `/static/callback.html` (e.g. `https://xxx.execute-api.region.amazonaws.com/Prod/static/callback.html`).
+   - Sign-out: `http://localhost:8080/` and your deployed base URL.
+
+### 2. Configure ywiki
+
+Set these (env vars override `src/main/resources/project.properties`):
+
+| Variable | Description |
+|----------|-------------|
+| `COGNITO_USER_POOL_ID` | User pool ID (e.g. `us-east-1_xxxxx`) |
+| `COGNITO_REGION` | AWS region (e.g. `us-east-1`) |
+| `COGNITO_CLIENT_ID` | App client ID |
+| `COGNITO_DOMAIN` | Full Hosted UI URL, or the domain *prefix* only (e.g. `ywiki-auth` → `https://ywiki-auth.auth.region.amazoncognito.com`) |
+
+**Example (PowerShell):**
+
+    $env:COGNITO_USER_POOL_ID = "us-east-1_xxxxxxxxx"
+    $env:COGNITO_REGION = "us-east-1"
+    $env:COGNITO_CLIENT_ID = "your-client-id"
+    $env:COGNITO_DOMAIN = "https://ywiki-auth.auth.us-east-1.amazoncognito.com"
+
+If Cognito is **not** configured, all endpoints remain open (no auth required).
+
+---
+
 ## Roadmap
 
 **Strategy:** Get all elements of ywiki working as a **standalone** app first; then port the wiki workflow (API, persistence, auth) into the atlas **backend** (globalskiatlas_data) and **frontend** (GlobalSkiAtlas_2), with Swagger and API frontend there.
@@ -76,7 +118,7 @@ This will:
 * [x] Add simple MD file, make sure it gets served.
 * [x] Add simple SPA editor, host resources locally.
 * [x] Resort-entry layout (stats, map image, Markdown body).
-* [ ] Add Cognito integrated.
+* [x] Add Cognito integrated.
 * [ ] Get POST/UPDATE working.
 * [ ] Add cloud-based doc store (e.g. DynamoDB or S3).
 * [ ] Revision workflow (propose → pending → accept/reject).
@@ -103,9 +145,8 @@ This will:
 ## Open Questions
 
 * How will revision history be stored?
-* How will AUTH be handled?
-* How will authorization work? Ownership?
-* What MD front-end? Pick editor with display only?
+* Authorization: ownership, roles?
+* What MD front-end for edit vs display?
 
 ## Use Cases
 

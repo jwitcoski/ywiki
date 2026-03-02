@@ -26,6 +26,34 @@ body {
   margin-right: auto;
 }
 
+.resort-auth-header {
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.resort-auth-widget {
+  font-size: 0.9rem;
+  color: var(--resort-footer-color);
+}
+
+.resort-auth-widget a {
+  color: var(--resort-title-color);
+  text-decoration: none;
+}
+
+.resort-auth-widget a:hover {
+  text-decoration: underline;
+}
+
+.resort-auth-user {
+  margin-right: 0.5rem;
+}
+
+.resort-auth-disabled {
+  color: var(--resort-footer-color);
+  font-style: italic;
+}
+
 .resort-entry {
   margin-bottom: 2.5rem;
 }

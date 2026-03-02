@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Signing in… – ywiki</title>
+  <script src="js/auth.js"></script>
+</head>
+<body>
+  <p>Signing you in…</p>
+  <script>
+    var token = (function () {
+      var h = window.location.hash || '';
+      var p = {};
+      h.replace(/^#?/, '').split('&').forEach(function (s) {
+        var kv = s.split('=');
+        if (kv.length === 2) p[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+      });
+      return p.id_token || null;
+    })();
+    if (token) {
+      sessionStorage.setItem('ywiki_id_token', token);
+      try {
+        var pl = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        sessionStorage.setItem('ywiki_user', pl.email || pl['cognito:username'] || pl.sub || '');
+      } catch (e) {}
+      window.location.replace(window.location.origin + window.location.pathname.replace(/callback\.html$/, '') + 'index.html');
+    } else {
+      document.body.innerHTML = '<p>No token received. <a href="index.html">Back to wiki</a></p>';
+    }
+  </script>
+</body>
+</html>

@@ -39,7 +39,7 @@ public class RootResource {
     private static final String DEFAULT_PAGE = "index.html";
 
     @GET 
-    @Path("{path:(.+)?}") // use a regex to capture full path with '/'. https://docs.oracle.com/javaee/7/api/javax/ws/rs/Path.html
+    @Path("{path: (|(?!auth($|/)).+) }")  // match root or any path that does NOT start with "auth"
     public Response get(@PathParam("path") String path) throws IOException {
         String fullPath = (path == null || path.isEmpty()) ? "/" + ROOT_DEFAULT : "/" + path;
         
