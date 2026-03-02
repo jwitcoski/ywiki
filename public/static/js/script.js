@@ -56,6 +56,7 @@ async function saveEntry() {
 
     if (resp.ok) {
       alert('Saved!');
+      loadRevisions();
     } else if (resp.status === 401) {
       alert('Sign in required to save changes.');
     } else {
@@ -80,4 +81,88 @@ async function loadEntry() {
   } catch (e) {
     // ignore; page will keep its default content
   }
+}
+
+async function loadRevisions() {
+  var el = document.getElementById('revisions-list');
+  if (!el) return;
+  try {
+    var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH) + '/revisions?limit=20');
+    if (!resp.ok) return;
+    var data = await resp.json();
+    var list = (data && data.revisions) ? data.revisions : [];
+    if (list.length === 0) {
+      el.innerHTML = '<p class="resort-list-empty">No revisions yet.</p>';
+    } else {
+      el.innerHTML = list.map(function (r) {
+        var ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
+        var user = r.userId || 'anonymous';
+        var summary = (r.summary || 'Edit').replace(/</g, '&lt;');
+        return '<div class="resort-revision-item"><span class="resort-revision-time">' + ts + '</span> <span class="resort-revision-user">' + user + '</span>: ' + summary + '</div>';
+      }).join('');
+    }
+  } catch (e) {
+    el.innerHTML = '<p class="resort-list-empty">Could not load revisions.</p>';
+  }
+}
+
+async function loadComments() {
+  var el = document.getElementById('comments-list');
+  if (!el) return;
+  try {
+    var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH) + '/comments?limit=100');
+    if (!resp.ok) return;
+    var data = await resp.json();
+    var list = (data && data.comments) ? data.comments : [];
+    if (list.length === 0) {
+      el.innerHTML = '<p class="resort-list-empty">No comments yet.</p>';
+    } else {
+      el.innerHTML = list.map(function (c) {
+        var ts = c.timestamp ? new Date(c.timestamp).toLocaleString() : '';
+        var user = c.userId || 'anonymous';
+        var content = (c.content || '').replace(/</g, '&lt;').replace(/\n/g, '<br/>');
+        return '<div class="resort-comment-item"><span class="resort-comment-meta">' + user + ' · ' + ts + '</span><p class="resort-comment-content">' + content + '</p></div>';
+      }).join('');
+    }
+  } catch (e) {
+    el.innerHTML = '<p class="resort-list-empty">Could not load comments.</p>';
+  }
+}
+
+async function postComment() {
+  var input = document.getElementById('comment-input');
+  var btn = document.getElementById('comment-submit-btn');
+  if (!input || !btn) return;
+
+  var content = (input.value || '').trim();
+  if (!content) {
+    alert('Enter a comment.');
+    return;
+  }
+
+  var token = (window.ywikiAuth && typeof ywikiAuth.getToken === 'function') ? ywikiAuth.getToken() : null;
+  if (!token) {
+    alert('Sign in required to post a comment.');
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH) + '/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ content: content })
+    });
+    if (resp.ok) {
+      input.value = '';
+      loadComments();
+    } else if (resp.status === 401) {
+      alert('Sign in required to post a comment.');
+    } else {
+      alert('Failed to post comment: ' + resp.status);
+    }
+  } catch (e) {
+    alert('Failed to post comment.');
+  }
+  btn.disabled = false;
 }

@@ -255,3 +255,80 @@ body {
 .resort-edit-btn:active {
   transform: scale(0.98);
 }
+
+/* Revisions and comments */
+.resort-revisions,
+.resort-comments {
+  border-top: 1px solid var(--resort-edit-border);
+  padding-top: 1.5rem;
+  margin-top: 1rem;
+}
+
+.resort-section-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--resort-stats-label);
+  margin: 0 0 0.5rem 0;
+}
+
+.resort-list {
+  font-size: 0.9rem;
+  color: var(--resort-body-color);
+}
+
+.resort-list-empty {
+  color: var(--resort-footer-color);
+  font-style: italic;
+  margin: 0.5rem 0;
+}
+
+.resort-revision-item {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.resort-revision-time {
+  color: var(--resort-footer-color);
+  margin-right: 0.5rem;
+}
+
+.resort-revision-user {
+  font-weight: 500;
+  color: var(--resort-title-color);
+}
+
+.resort-comment-item {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.resort-comment-meta {
+  font-size: 0.8rem;
+  color: var(--resort-footer-color);
+}
+
+.resort-comment-content {
+  margin: 0.25rem 0 0 0;
+}
+
+.resort-comment-form {
+  margin-top: 1rem;
+}
+
+.resort-comment-input {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  padding: 0.5rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border: 1px solid var(--resort-edit-border);
+  border-radius: 4px;
+  resize: vertical;
+  margin-bottom: 0.5rem;
+}
+
+.resort-comment-input:focus {
+  outline: none;
+  border-color: var(--resort-subtitle-color);
+}

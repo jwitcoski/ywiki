@@ -54,7 +54,21 @@
     <button type="button" class="resort-edit-btn" onclick="saveEntry()">Save</button>
   </section>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+  <section class="resort-revisions" id="resort-revisions-section">
+    <h2 class="resort-section-title">Revision history</h2>
+    <div id="revisions-list" class="resort-list"></div>
+  </section>
+
+  <section class="resort-comments" id="resort-comments-section">
+    <h2 class="resort-section-title">Comments</h2>
+    <div id="comments-list" class="resort-list"></div>
+    <div class="resort-comment-form" id="comment-form-wrap">
+      <textarea id="comment-input" class="resort-comment-input" rows="2" placeholder="Add a comment (sign in required)"></textarea>
+      <button type="button" class="resort-edit-btn" id="comment-submit-btn" onclick="postComment()">Post comment</button>
+    </div>
+  </section>
+
+  <script src="js/showdown.min.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/script.js"></script>
   <script>
@@ -62,6 +76,8 @@
       ywikiAuth.init(function () {
         ywikiAuth.renderWidget('resort-auth-widget');
         loadEntry();
+        loadRevisions();
+        loadComments();
       });
     });
   </script>

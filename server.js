@@ -43,8 +43,8 @@ const domainUrl = cognito.domain
   : '';
 const isCognitoConfigured = !!(cognito.userPoolId && cognito.clientId);
 
-// --- In-memory wiki store ----------------------------------------------------
-const wiki = new Map();
+// --- Wiki store (DynamoDB if DYNAMODB_TABLE_PREFIX set, else in-memory) ---
+const wikiStore = require('./lib/wiki-store');
 
 // --- JWT validation (Cognito) ------------------------------------------------
 let jwtValidator = null;
@@ -115,21 +115,93 @@ app.get('/auth/config', (req, res) => {
   });
 });
 
-app.get('/wiki*', (req, res) => {
-  const wikiPath = req.path.slice(5) || ''; // '/wiki' -> '', '/wiki/foo' -> '/foo', '/wiki/a/b' -> '/a/b'
-  const key = wikiPath.replace(/^\/+/, '');
-  const entry = wiki.get(key) || null;
-  res.json(entry);
+// POST routes before GET /wiki* so they are never shadowed
+app.post('/wiki/:pageId/comments', requireCognito, async (req, res) => {
+  const pageId = req.params.pageId;
+  const { content, parentCommentId } = req.body || {};
+  if (typeof content !== 'string' || !content.trim()) {
+    return res.status(400).json({ error: 'Bad Request', message: 'content required' });
+  }
+  const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
+  try {
+    const comment = await wikiStore.addComment(pageId, userId, content.trim(), parentCommentId);
+    res.status(201).json(comment);
+  } catch (err) {
+    console.error('POST /wiki/:pageId/comments', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
-app.post('/wiki', requireCognito, (req, res) => {
+app.post('/wiki', requireCognito, async (req, res) => {
   const entry = req.body;
   if (!entry || typeof entry.path !== 'string') {
     return res.status(400).json({ error: 'Bad Request', message: 'path required' });
   }
-  entry.edited = entry.edited || new Date().toISOString();
-  wiki.set(entry.path, entry);
-  res.status(200).end();
+  const pageId = entry.path.replace(/^\/+/, '');
+  if (!pageId) return res.status(400).json({ error: 'Bad Request', message: 'path required' });
+  const content = typeof entry.content === 'string' ? entry.content : '';
+  const title = typeof entry.title === 'string' ? entry.title : pageId;
+  const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
+  const now = new Date().toISOString();
+  try {
+    let page = await wikiStore.getPage(pageId);
+    if (!page) {
+      page = {
+        pageId,
+        title,
+        content,
+        createdAt: now,
+        updatedAt: now,
+        createdBy: userId,
+        updatedBy: userId,
+        status: 'published',
+      };
+      await wikiStore.putPage(page);
+    }
+    const rev = await wikiStore.createRevision(pageId, content, userId, 'Edit');
+    await wikiStore.updatePageContent(pageId, content, now, userId, rev.revisionId);
+    res.status(200).end();
+  } catch (err) {
+    console.error('POST /wiki', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/wiki/:pageId/revisions', async (req, res) => {
+  const pageId = req.params.pageId;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+  try {
+    const items = await wikiStore.listRevisions(pageId, limit);
+    res.json({ revisions: items });
+  } catch (err) {
+    console.error('GET /wiki/:pageId/revisions', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/wiki/:pageId/comments', async (req, res) => {
+  const pageId = req.params.pageId;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 200);
+  try {
+    const items = await wikiStore.listComments(pageId, limit);
+    res.json({ comments: items });
+  } catch (err) {
+    console.error('GET /wiki/:pageId/comments', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/wiki*', async (req, res) => {
+  const wikiPath = req.path.slice(5) || '';
+  const key = wikiPath.replace(/^\/+/, '');
+  if (!key) return res.json(null);
+  try {
+    const entry = await wikiStore.getPage(key);
+    res.json(entry || null);
+  } catch (err) {
+    console.error('GET /wiki', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
 });
 
 // --- Static: / and /static/* -------------------------------------------------
@@ -137,6 +209,12 @@ const staticDir = path.join(__dirname, 'public', 'static');
 app.use('/static', express.static(staticDir));
 app.get('/', (req, res) => {
   res.sendFile(path.join(staticDir, 'index.html'));
+});
+
+// Log and respond for any unmatched route (helps debug 404s)
+app.use((req, res) => {
+  console.warn('404', req.method, req.url);
+  res.status(404).json({ error: 'Not Found', path: req.path });
 });
 
 // --- Start -------------------------------------------------------------------
@@ -151,6 +229,11 @@ server.on('error', (err) => {
 });
 server.listen(PORT, () => {
   console.log('ywiki server on http://localhost:' + PORT);
+  if (wikiStore.useDynamo) {
+    console.log('Wiki store: DynamoDB (prefix=%s)', process.env.DYNAMODB_TABLE_PREFIX);
+  } else {
+    console.log('Wiki store: in-memory (set DYNAMODB_TABLE_PREFIX to use DynamoDB)');
+  }
   if (isCognitoConfigured) {
     console.log('Cognito configured: region=%s, userPoolId=%s', cognito.region, cognito.userPoolId);
   } else {

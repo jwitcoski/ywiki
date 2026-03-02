@@ -8,7 +8,7 @@ A simple Markdown wiki: **Node (Express)** server and static frontend. Optional 
 
 * **Resort-entry UI** — Header, stats box, map image, Markdown body (e.g. Montage Mountain); edit and click Convert to preview.
 * **Cognito (optional)** — Sign in / Sign out in the top-right; when configured, `POST /wiki` requires a valid JWT.
-* **Node server** — Primary runtime. Express on port 8080: `/`, `/static/*`, `/version`, `/auth/config`, `/wiki` (GET/POST).
+* **Node server** — Primary runtime. Express on port 8080: `/`, `/static/*`, `/version`, `/auth/config`, `/wiki` (GET/POST), `/wiki/:pageId/revisions` (GET), `/wiki/:pageId/comments` (GET/POST).
 * **Java app** — Optional. Maven/Jersey/Lambda in `src/main/` for `deploy.sh` / Lambda.
 
 ## Quick start (Node)
@@ -100,6 +100,27 @@ If Cognito is **not** configured, all endpoints remain open (no auth required).
 
 ---
 
+## DynamoDB and parquet (optional)
+
+Wiki data can be stored in **DynamoDB** (pages, revisions, comments) or kept **in-memory** (default). Schema and parquet mapping are in [db_structure.md](db_structure.md).
+
+### Use DynamoDB
+
+1. Set **DYNAMODB_TABLE_PREFIX** (e.g. `ywiki`) so the server and scripts use tables `{prefix}-WikiPages`, `{prefix}-WikiRevisions`, `{prefix}-WikiComments`.
+2. Create tables (once):  
+   `npm run create-tables`  
+   Uses `AWS_REGION` and `DYNAMODB_TABLE_PREFIX` (default `ywiki`). Requires AWS credentials.
+3. (Optional) Populate pages from the ski areas parquet file:  
+   `npm run ingest-parquet`  
+   Or pass a URL/path: `node scripts/ingest-parquet-to-wiki.js [url-or-path]`.  
+   Default URL: `https://globalskiatlas-backend-k8s-output.s3.us-east-1.amazonaws.com/combined/ski_areas_analyzed.parquet`
+4. Start the server with the same prefix:  
+   `$env:DYNAMODB_TABLE_PREFIX="ywiki"; npm start` (PowerShell)
+
+Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS needed).
+
+---
+
 ## Roadmap
 
 **Strategy:** Get all elements of ywiki working as a **standalone** app first; then port the wiki workflow (API, persistence, auth) into the atlas **backend** (globalskiatlas_data) and **frontend** (GlobalSkiAtlas_2), with Swagger and API frontend there.
@@ -115,7 +136,7 @@ If Cognito is **not** configured, all endpoints remain open (no auth required).
 * [x] Resort-entry layout (stats, map image, Markdown body).
 * [x] Add Cognito integrated.
 * [x] Get POST/UPDATE working.
-* [ ] Add cloud-based doc store (e.g. DynamoDB or S3).
+* [x] Add cloud-based doc store (e.g. DynamoDB or S3).
 * [ ] Revision workflow (propose → pending → accept/reject).
 * [ ] Clean up and release.
 * [x] Add fully automated deploy scripts
