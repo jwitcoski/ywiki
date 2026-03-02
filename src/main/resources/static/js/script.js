@@ -1,8 +1,13 @@
 function run() {
   var text = document.getElementById('sourceTA').value,
-      target = document.getElementById('targetDiv'),
-      converter = new showdown.Converter(),
-      html = converter.makeHtml(text);
+      target = document.querySelector('.js-resort-body'),
+      converter = new showdown.Converter();
 
-    target.innerHTML = html;
+  if (!target) return;
+
+  var html = converter.makeHtml(text || '');
+  target.innerHTML = html;
+
+  var firstP = target.querySelector('p');
+  if (firstP) firstP.classList.add('resort-body-first');
 }

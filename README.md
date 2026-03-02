@@ -1,5 +1,7 @@
 # ywiki
 
+Fork of [philion/ywiki](https://github.com/philion/ywiki), maintained as a standalone wiki and later to be ported into the Ski Atlas backend and frontend.
+
 Pronounced "lambda-wiki", but spelled with a 'y' because it was easier that typing out "lambda", and *much* easier than figuring out the Unicode every time.
 
 This is a simple Markdown wiki, in [Java](https://docs.oracle.com/javase/8/docs/api/), [Jersey](https://jersey.github.io/), [AWS Lambda](https://aws.amazon.com/lambda/), and [aws-serverless-java](https://github.com/awslabs/aws-serverless-java-container). It is designed to demonstrate fully automated build and deploy to AWS Lambda, as well as simple monitoring and metrics (devops).
@@ -25,14 +27,20 @@ If you have [homebrew](https://brew.sh) installed, use the following
 
 ## Building & Running
 
-Standard [Maven](https://maven.apache.org/) build:
+You can build and run **without installing Maven** by using the Maven Wrapper (recommended on Windows):
 
-    mvn clean packge
-    
-To run an instance locally:
+    .\mvnw.cmd clean package
+    .\mvnw.cmd exec:java
 
+Or with Maven installed:
+
+    mvn clean package
     mvn exec:java
-    
+
+**Windows:** Ensure `JAVA_HOME` is set to your JDK installation (e.g. `C:\Program Files\Java\jdk-24`). If you only have `java` on your PATH, set it to the folder that contains `bin\java.exe`:
+
+    $env:JAVA_HOME = "C:\Program Files\Java\jdk-24"   # PowerShell; adjust path to your JDK
+
 This will wrap the Jersey instance in a Grizzly server and run at: 
 
 * http://localhost:8080/static/index.html
@@ -53,21 +61,36 @@ This will:
 2. package and upload the versioned package
 3. deploy the version
 4. get the deployed URL
-5. test the correct version was deplyed
+5. test the correct version was deployed
+
+## Roadmap
+
+**Strategy:** Get all elements of ywiki working as a **standalone** app first; then port the wiki workflow (API, persistence, auth) into the atlas **backend** (globalskiatlas_data) and **frontend** (GlobalSkiAtlas_2), with Swagger and API frontend there.
+
+---
 
 ## Next Steps
 
+### Phase 1 — Standalone (ywiki)
+
 * [x] Add simple MD file, make sure it gets served.
 * [x] Add simple SPA editor, host resources locally.
+* [x] Resort-entry layout (stats, map image, Markdown body).
 * [ ] Add Cognito integrated.
-* [ ] Setup Swagger and API frontend
 * [ ] Get POST/UPDATE working.
-* [ ] Add cloud-based doc store.
+* [ ] Add cloud-based doc store (e.g. DynamoDB or S3).
+* [ ] Revision workflow (propose → pending → accept/reject).
 * [ ] Clean up and release.
 * [x] Add fully automated deploy scripts
 * [x] Add project versioning
 * [ ] Add log-query script
 * [ ] Add status script / CW dash
+
+### Phase 2 — Port to atlas backend + frontend
+
+* [ ] Implement wiki API in globalskiatlas_data (Python): revisions, moderation, storage.
+* [ ] Setup Swagger and API frontend in GlobalSkiAtlas_2 (or atlas backend).
+* [ ] Frontend resort-entry UI and wiki editing in GlobalSkiAtlas_2; retire or archive ywiki as reference.
 
 ### Notes on sam.yaml
 

@@ -34,14 +34,14 @@ import org.apache.commons.io.IOUtils;
 public class RootResource {
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(RootResource.class);
     
-    // TODO: Make configurable
-    private static final String ROOT = "/static/"; //automate, from path?
+    // Classpath path for static resources. Root request (/) serves static/index.html.
+    private static final String ROOT_DEFAULT = "static/index.html";
     private static final String DEFAULT_PAGE = "index.html";
 
     @GET 
     @Path("{path:(.+)?}") // use a regex to capture full path with '/'. https://docs.oracle.com/javaee/7/api/javax/ws/rs/Path.html
     public Response get(@PathParam("path") String path) throws IOException {
-        String fullPath = ROOT + path;
+        String fullPath = (path == null || path.isEmpty()) ? "/" + ROOT_DEFAULT : "/" + path;
         
         LOG.trace("got request: '{}' => {}", path, fullPath);
         
