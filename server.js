@@ -223,6 +223,16 @@ app.post('/wiki/:pageId/revisions/:revisionId/reject', requireCognito, async (re
   }
 });
 
+app.get('/wiki/index', async (req, res) => {
+  try {
+    const pages = await wikiStore.listPages();
+    res.json({ pages });
+  } catch (err) {
+    console.error('GET /wiki/index', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.get('/wiki/:pageId/revisions', async (req, res) => {
   const pageId = req.params.pageId;
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);

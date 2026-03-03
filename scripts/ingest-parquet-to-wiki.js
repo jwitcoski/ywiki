@@ -21,7 +21,9 @@ const region = process.env.AWS_REGION || 'us-east-1';
 const BATCH_SIZE = 25;
 
 const client = new DynamoDBClient({ region });
-const docClient = DynamoDBDocumentClient.from(client);
+const docClient = DynamoDBDocumentClient.from(client, {
+  marshallOptions: { removeUndefinedValues: true },
+});
 
 function slug(str) {
   if (str == null || str === '') return 'unknown';
@@ -152,15 +154,21 @@ async function downloadParquet(url) {
 }
 
 async function readParquetFile(filePath) {
-  const parquet = require('parquetjs');
-  const reader = await parquet.ParquetReader.openFile(filePath);
-  const cursor = reader.getCursor();
-  const rows = [];
-  let row;
-  while ((row = await cursor.next())) {
-    rows.push(row);
-  }
-  await reader.close();
+  const { parquetRead, parquetSchema } = await import('hyparquet');
+  const buffer = fs.readFileSync(filePath);
+  const asyncBuffer = {
+    byteLength: buffer.byteLength,
+    slice: (start, end) => Promise.resolve(buffer.buffer.slice(
+      buffer.byteOffset + start,
+      buffer.byteOffset + (end !== undefined ? end : buffer.byteLength)
+    )),
+  };
+  let rows = [];
+  await parquetRead({
+    file: asyncBuffer,
+    rowFormat: 'object',
+    onComplete: (data) => { rows = data; },
+  });
   return rows;
 }
 
@@ -191,13 +199,19 @@ async function main() {
   const rows = await readParquetFile(filePath);
   console.log('Rows:', rows.length);
 
-  const items = rows.map(rowToItem);
+  const allItems = rows.map(rowToItem);
+  // Deduplicate by pageId (last entry wins)
+  const seen = new Map();
+  for (const item of allItems) seen.set(item.pageId, item);
+  const items = Array.from(seen.values());
+  console.log('Unique pages:', items.length, '(deduped from', allItems.length, ')');
+
   let written = 0;
   for (let i = 0; i < items.length; i += BATCH_SIZE) {
     const batch = items.slice(i, i + BATCH_SIZE);
     await writeBatch(batch);
     written += batch.length;
-    if (written % 100 === 0 || written === items.length) {
+    if (written % 250 === 0 || written === items.length) {
       console.log('Written', written, '/', items.length);
     }
   }

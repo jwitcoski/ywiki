@@ -28,7 +28,20 @@ body {
 
 .resort-auth-header {
   margin-bottom: 1rem;
-  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.resort-browse-link {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--resort-subtitle-color);
+  text-decoration: none;
+}
+.resort-browse-link:hover {
+  text-decoration: underline;
 }
 
 .resort-auth-widget {

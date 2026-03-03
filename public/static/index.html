@@ -3,43 +3,31 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Montage Mountain Ski Area – ywiki</title>
+  <title>Ski Atlas – ywiki</title>
   <link rel="stylesheet" href="css/style.css?v=3"/>
 </head>
 <body>
 
   <header class="resort-auth-header">
+    <a href="browse.html" class="resort-browse-link">Browse all resorts →</a>
     <div id="resort-auth-widget" class="resort-auth-widget"></div>
   </header>
 
   <article class="resort-entry">
     <header class="resort-header">
-      <p class="resort-location">Pennsylvania, United States of America</p>
-      <h1 class="resort-title">Montage Mountain Ski Area</h1>
-      <p class="resort-subtitle">Downhill ski resort · 6 lifts · 55 trails</p>
+      <p class="resort-location" id="resort-location"></p>
+      <h1 class="resort-title" id="resort-title">Loading…</h1>
+      <p class="resort-subtitle" id="resort-subtitle"></p>
     </header>
 
     <div class="resort-layout">
       <div class="resort-content">
-        <div class="resort-stats">
-          <div class="resort-stat"><span class="stat-label">TOTAL AREA</span> <span class="stat-value">382 acres</span></div>
-          <div class="resort-stat"><span class="stat-label">SKIABLE TERRAIN</span> <span class="stat-value">225 acres</span></div>
-          <div class="resort-stat"><span class="stat-label">LIFTS</span> <span class="stat-value">6</span></div>
-          <div class="resort-stat"><span class="stat-label">LONGEST LIFT</span> <span class="stat-value">0.81 mi</span></div>
-          <div class="resort-stat"><span class="stat-label">TRAILS</span> <span class="stat-value">55</span></div>
-          <div class="resort-stat"><span class="stat-label">LONGEST TRAIL</span> <span class="stat-value">0.05 mi</span></div>
-        </div>
-        <p class="resort-trail-breakdown"><span class="stat-label">Trail breakdown</span> Novice 3 · Easy 22 · Intermediate 16 · Advanced 8 · Expert 6</p>
-        <p class="resort-meta">Lift types: chair lift 5, magic carpet 1 · Gladed terrain: No · Snow park: No · Sledding / tubing: No</p>
+        <div class="resort-stats" id="resort-stats"></div>
+        <p class="resort-trail-breakdown" id="resort-trail-breakdown" style="display:none"></p>
+        <p class="resort-meta" id="resort-meta" style="display:none"></p>
 
-        <div class="resort-body js-resort-body">
-          <p class="resort-body-first">Montage Mountain Ski Area sits in northeastern Pennsylvania with 225 acres of skiable terrain and 55 trails spread across 382 acres. Six lifts—including five chair lifts and one magic carpet—serve terrain from novice to expert, with the longest run at 0.05 mi and the longest lift at 0.81 mi. Add your own description below and click Convert to update the body text.</p>
-        </div>
+        <div class="resort-body js-resort-body"></div>
       </div>
-      <figure class="resort-map">
-        <img src="images/Montage%20Mountain%20Ski%20Area.jpeg" alt="Montage Mountain Ski Area trail map"/>
-        <figcaption>Montage Mountain Ski Area — trail map</figcaption>
-      </figure>
     </div>
 
     <footer class="resort-footer">
@@ -50,7 +38,7 @@
   <section class="resort-edit">
     <h2 class="resort-edit-title">Edit body (Markdown)</h2>
     <p class="resort-workflow-hint">Save <strong>proposes</strong> a change: the page does not update until another user accepts it. Add a required comment describing what you changed; it will appear in Comments. You can reject your own proposal if you change your mind.</p>
-    <textarea id="sourceTA" class="resort-edit-source" rows="8" placeholder="Write the resort description in Markdown. Use **bold**, *italic*, and line breaks. First letter will appear as a drop cap.">Montage Mountain Ski Area sits in northeastern Pennsylvania with 225 acres of skiable terrain and 55 trails spread across 382 acres. Six lifts—including five chair lifts and one magic carpet—serve terrain from novice to expert, with the longest run at 0.05 mi and the longest lift at 0.81 mi. Add your own description below and click Convert to update the body text.</textarea>
+    <textarea id="sourceTA" class="resort-edit-source" rows="8" placeholder="Write the resort description in Markdown. Use **bold**, *italic*, and line breaks. First letter will appear as a drop cap."></textarea>
     <div class="resort-edit-revision-comment">
       <label for="revision-comment">Revision comment (required)</label>
       <input type="text" id="revision-comment" class="resort-revision-comment-input" placeholder="Describe what you changed (e.g. Added night skiing section)" maxlength="500"/>

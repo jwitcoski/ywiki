@@ -1,6 +1,8 @@
-// Simple wiki path for this page. In a multi-page app this would
-// come from the URL or a data attribute.
-var YWIKI_PATH = 'montage-mountain';
+var YWIKI_PATH = (function () {
+  var p = new URLSearchParams(window.location.search).get('page') || '';
+  if (!p) { window.location.replace('browse.html'); }
+  return p;
+}());
 
 function renderFromMarkdown(text) {
   var target = document.querySelector('.js-resort-body');
@@ -89,19 +91,92 @@ async function saveEntry() {
   }
 }
 
-async function loadEntry() {
-  var textarea = document.getElementById('sourceTA');
-  if (!textarea) return;
+function esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val || '';
+}
+
+function populatePage(page) {
+  if (!page) {
+    document.title = 'Not Found – Ski Atlas';
+    setText('resort-title', 'Resort not found: ' + YWIKI_PATH);
+    setText('resort-subtitle', 'This page does not exist yet.');
+    return;
+  }
+
+  document.title = (page.title || YWIKI_PATH) + ' – Ski Atlas';
+  setText('resort-location', [page.state, page.country].filter(Boolean).join(', '));
+  setText('resort-title', page.title || YWIKI_PATH);
+
+  var subParts = [];
+  if (page.resortType) subParts.push(page.resortType);
+  if (page.totalLifts) subParts.push(page.totalLifts + ' lifts');
+  if (page.downhillTrails) subParts.push(page.downhillTrails + ' trails');
+  setText('resort-subtitle', subParts.join(' · '));
+
+  var stats = [];
+  if (page.totalAreaAcres) stats.push(['TOTAL AREA', page.totalAreaAcres + ' acres']);
+  else if (page.totalAreaHa) stats.push(['TOTAL AREA', page.totalAreaHa + ' ha']);
+  if (page.skiableTerrainAcres) stats.push(['SKIABLE TERRAIN', page.skiableTerrainAcres + ' acres']);
+  else if (page.skiableTerrainHa) stats.push(['SKIABLE TERRAIN', page.skiableTerrainHa + ' ha']);
+  if (page.totalLifts) stats.push(['LIFTS', page.totalLifts]);
+  if (page.longestLiftMi) stats.push(['LONGEST LIFT', page.longestLiftMi + ' mi']);
+  if (page.downhillTrails) stats.push(['TRAILS', page.downhillTrails]);
+  if (page.longestTrailMi) stats.push(['LONGEST TRAIL', page.longestTrailMi + ' mi']);
+
+  var statsEl = document.getElementById('resort-stats');
+  if (statsEl) {
+    statsEl.innerHTML = stats.map(function (s) {
+      return '<div class="resort-stat"><span class="stat-label">' + esc(s[0]) + '</span> <span class="stat-value">' + esc(String(s[1])) + '</span></div>';
+    }).join('');
+    statsEl.style.display = stats.length ? '' : 'none';
+  }
+
+  var trailParts = [];
+  if (page.trailsNovice) trailParts.push('Novice ' + page.trailsNovice);
+  if (page.trailsEasy) trailParts.push('Easy ' + page.trailsEasy);
+  if (page.trailsIntermediate) trailParts.push('Intermediate ' + page.trailsIntermediate);
+  if (page.trailsAdvanced) trailParts.push('Advanced ' + page.trailsAdvanced);
+  if (page.trailsExpert) trailParts.push('Expert ' + page.trailsExpert);
+  if (page.trailsFreeride) trailParts.push('Freeride ' + page.trailsFreeride);
+  var tbEl = document.getElementById('resort-trail-breakdown');
+  if (tbEl) {
+    if (trailParts.length) {
+      tbEl.innerHTML = '<span class="stat-label">Trail breakdown</span> ' + esc(trailParts.join(' · '));
+      tbEl.style.display = '';
+    } else {
+      tbEl.style.display = 'none';
+    }
+  }
+
+  var metaParts = [];
+  if (page.liftTypes) metaParts.push('Lift types: ' + page.liftTypes);
+  if (page.gladedTerrain) metaParts.push('Gladed terrain: ' + page.gladedTerrain);
+  if (page.snowPark) metaParts.push('Snow park: ' + page.snowPark);
+  if (page.sleddingTubing) metaParts.push('Sledding / tubing: ' + page.sleddingTubing);
+  var metaEl = document.getElementById('resort-meta');
+  if (metaEl) {
+    metaEl.textContent = metaParts.join(' · ');
+    metaEl.style.display = metaParts.length ? '' : 'none';
+  }
+
+  var textarea = document.getElementById('sourceTA');
+  if (textarea) textarea.value = page.content || '';
+  renderFromMarkdown(page.content || '');
+}
+
+async function loadEntry() {
   try {
     var resp = await fetch('/wiki/' + encodeURIComponent(YWIKI_PATH));
-    if (!resp.ok) return;
-    var entry = await resp.json();
-    if (!entry || !entry.content) return;
-    textarea.value = entry.content;
-    renderFromMarkdown(entry.content);
+    if (!resp.ok) { populatePage(null); return; }
+    var page = await resp.json();
+    populatePage(page);
   } catch (e) {
-    // ignore; page will keep its default content
+    populatePage(null);
   }
 }
 
