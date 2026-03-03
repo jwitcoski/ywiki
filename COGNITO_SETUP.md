@@ -48,7 +48,7 @@ Step-by-step to create a User Pool and App Client so the **Sign in** link works.
    - **Callback URL(s)** (add exactly):
      - `http://localhost:8080/static/callback.html`
    - **Sign-out URL(s)** (add exactly):
-     - `http://localhost:8080/`
+     - `http://localhost:8080/static/index.html`
    - Click **Next**.
 
 4. **Review and create** → **Create user pool**.
@@ -97,6 +97,17 @@ Open **http://localhost:8080/static/index.html** → click **Sign in** → you s
 
 ---
 
+## Troubleshooting
+
+**"Invalid request - Please check your input" when clicking Sign out**  
+The app sends `logout_uri=http://localhost:8080/static/index.html`. In Cognito → App integration → your app client → **Hosted UI** (or **App client information** → Edit) → **Sign out URL(s)** add exactly:
+
+- `http://localhost:8080/static/index.html`
+
+(No trailing slash, no typo—Cognito matches the string exactly.)
+
+---
+
 ## Optional: create a test user
 
 If you didn’t enable self-registration or want a test user:
@@ -112,6 +123,6 @@ If you didn’t enable self-registration or want a test user:
 Add your **deployed** URLs to the same App client:
 
 - **Callback URL**: `https://<your-api-id>.execute-api.<region>.amazonaws.com/Prod/static/callback.html`
-- **Sign-out URL**: `https://<your-api-id>.execute-api.<region>.amazonaws.com/Prod/`
+- **Sign-out URL**: `https://<your-api-id>.execute-api.<region>.amazonaws.com/Prod/static/index.html`
 
 Then set the same four env vars in the Lambda (or in `project.properties` / config) with the deployed origin if needed.

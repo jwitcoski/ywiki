@@ -349,6 +349,39 @@ body {
 .resort-revision-reject { border-color: #c62828; color: #c62828; }
 .resort-revision-reject:hover { background: #ffebee; }
 
+.resort-revision-view-diff {
+  margin-left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid #90a4ae;
+  background: #fff;
+  color: #546e7a;
+}
+.resort-revision-view-diff:hover { background: #eceff1; }
+
+.resort-revision-diff {
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
+  padding: 0.75rem;
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+.resort-diff-pre {
+  margin: 0;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  white-space: pre;
+  word-break: normal;
+}
+.resort-diff-add { color: #2e7d32; background: #e8f5e9; display: block; }
+.resort-diff-remove { color: #c62828; background: #ffebee; display: block; }
+.resort-diff-context { color: #546e7a; display: block; }
+
 .resort-comment-item {
   padding: 0.6rem 0;
   border-bottom: 1px solid #eee;

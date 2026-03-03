@@ -64,6 +64,7 @@ History of page content changes. One item per revision.
 | content | String | | Full Markdown at this revision |
 | timestamp | String | | ISO timestamp |
 | userId | String | | Cognito sub |
+| userDisplayName | String | | Cognito username or email (for display) |
 | summary | String | | Short change description |
 | diff | String | | Optional diff text |
 | status | String | | **approved** (accepted), **pending** (proposed), **rejected** — page content updates only when a revision is approved |
@@ -80,6 +81,7 @@ Comments on a page. Optional threading via parentCommentId.
 | pageId | String | PK | Page this comment is on |
 | commentId | String | SK | Unique comment id (e.g. timestamp-uuid) |
 | userId | String | | Cognito sub |
+| userDisplayName | String | | Cognito username or email (for display) |
 | timestamp | String | | ISO timestamp |
 | content | String | | Comment text |
 | parentCommentId | String | | Optional; for replies |

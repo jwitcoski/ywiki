@@ -99,6 +99,12 @@ async function requireCognito(req, res, next) {
   res.status(401).json({ error: 'Unauthorized', message: 'Valid Cognito token required' });
 }
 
+function userDisplayName(principal) {
+  if (!principal) return null;
+  const name = principal.username || principal.email || principal.sub;
+  return name || null;
+}
+
 // --- Routes (API first so they take precedence) ------------------------------
 app.get('/version', (req, res) => {
   const pkg = require('./package.json');
@@ -123,8 +129,9 @@ app.post('/wiki/:pageId/comments', requireCognito, async (req, res) => {
     return res.status(400).json({ error: 'Bad Request', message: 'content required' });
   }
   const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
+  const displayName = userDisplayName(req.cognitoPrincipal);
   try {
-    const comment = await wikiStore.addComment(pageId, userId, content.trim(), parentCommentId);
+    const comment = await wikiStore.addComment(pageId, userId, content.trim(), parentCommentId, displayName);
     res.status(201).json(comment);
   } catch (err) {
     console.error('POST /wiki/:pageId/comments', err);
@@ -145,6 +152,7 @@ app.post('/wiki', requireCognito, async (req, res) => {
   const title = typeof entry.title === 'string' ? entry.title : pageId;
   const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
   const now = new Date().toISOString();
+  const displayName = userDisplayName(req.cognitoPrincipal);
   try {
     let page = await wikiStore.getPage(pageId);
     if (!page) {
@@ -160,13 +168,13 @@ app.post('/wiki', requireCognito, async (req, res) => {
         currentRevisionId: null,
       };
       await wikiStore.putPage(page);
-      const rev = await wikiStore.createRevision(pageId, content, userId, comment, 'approved');
+      const rev = await wikiStore.createRevision(pageId, content, userId, comment, 'approved', displayName, '');
       await wikiStore.updatePageContent(pageId, content, now, userId, rev.revisionId);
-      await wikiStore.addComment(pageId, userId, 'Edit: ' + comment);
+      await wikiStore.addComment(pageId, userId, 'Edit: ' + comment, null, displayName);
       return res.status(200).end();
     }
-    const rev = await wikiStore.createRevision(pageId, content, userId, comment, 'pending');
-    await wikiStore.addComment(pageId, userId, 'Proposed: ' + comment);
+    const rev = await wikiStore.createRevision(pageId, content, userId, comment, 'pending', displayName, page.content || '');
+    await wikiStore.addComment(pageId, userId, 'Proposed: ' + comment, null, displayName);
     res.status(202).json({ revisionId: rev.revisionId, status: 'pending', message: 'Change proposed; pending accept/reject' });
   } catch (err) {
     console.error('POST /wiki', err);
@@ -179,6 +187,7 @@ app.post('/wiki/:pageId/revisions/:revisionId/accept', requireCognito, async (re
   const comment = typeof req.body === 'object' && typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
   if (!comment) return res.status(400).json({ error: 'Bad Request', message: 'comment required' });
   const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
+  const displayName = userDisplayName(req.cognitoPrincipal);
   try {
     const rev = await wikiStore.getRevision(pageId, revisionId);
     if (!rev) return res.status(404).json({ error: 'Not Found', message: 'Revision not found' });
@@ -187,7 +196,7 @@ app.post('/wiki/:pageId/revisions/:revisionId/accept', requireCognito, async (re
       return res.status(403).json({ error: 'Forbidden', message: 'You cannot accept your own revision; another user must accept it.' });
     }
     const accepted = await wikiStore.acceptRevision(pageId, revisionId, userId);
-    await wikiStore.addComment(pageId, userId, 'Accepted: ' + comment);
+    await wikiStore.addComment(pageId, userId, 'Accepted: ' + comment, null, displayName);
     res.json(accepted);
   } catch (err) {
     console.error('POST accept revision', err);
@@ -200,12 +209,13 @@ app.post('/wiki/:pageId/revisions/:revisionId/reject', requireCognito, async (re
   const comment = typeof req.body === 'object' && typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
   if (!comment) return res.status(400).json({ error: 'Bad Request', message: 'comment required' });
   const userId = req.cognitoPrincipal ? req.cognitoPrincipal.sub : null;
+  const displayName = userDisplayName(req.cognitoPrincipal);
   try {
     const rev = await wikiStore.rejectRevision(pageId, revisionId);
     if (!rev) {
       return res.status(404).json({ error: 'Not Found', message: 'Revision not found or not pending' });
     }
-    await wikiStore.addComment(pageId, userId, 'Rejected: ' + comment);
+    await wikiStore.addComment(pageId, userId, 'Rejected: ' + comment, null, displayName);
     res.json(rev);
   } catch (err) {
     console.error('POST reject revision', err);
@@ -254,7 +264,7 @@ app.get('/wiki*', async (req, res) => {
 const staticDir = path.join(__dirname, 'public', 'static');
 app.use('/static', express.static(staticDir));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(staticDir, 'index.html'));
+  res.redirect(302, '/static/index.html');
 });
 
 // Log and respond for any unmatched route (helps debug 404s)

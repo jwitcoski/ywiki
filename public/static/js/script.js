@@ -105,6 +105,73 @@ async function loadEntry() {
   }
 }
 
+var _contributorsCache = {};
+
+function updateContributorsFromRevisions(revisions) {
+  (revisions || []).forEach(function (r) {
+    var uid = r.userId || '';
+    if (uid) _contributorsCache[uid] = r.userDisplayName || r.userId || uid;
+  });
+  renderContributors();
+}
+
+function updateContributorsFromComments(comments) {
+  (comments || []).forEach(function (c) {
+    var uid = c.userId || '';
+    if (uid) _contributorsCache[uid] = c.userDisplayName || c.userId || uid;
+  });
+  renderContributors();
+}
+
+function renderContributors() {
+  var el = document.getElementById('resort-contributors');
+  if (!el) return;
+  var names = Object.keys(_contributorsCache).map(function (uid) {
+    return (_contributorsCache[uid] || uid).replace(/</g, '&lt;');
+  });
+  if (names.length === 0) {
+    el.textContent = '';
+  } else {
+    el.textContent = ' · contributed by: ' + names.join(', ');
+  }
+}
+
+function updateContributors(revisions) {
+  _contributorsCache = {};
+  (revisions || []).forEach(function (r) {
+    var uid = r.userId || '';
+    if (uid) _contributorsCache[uid] = r.userDisplayName || r.userId || uid;
+  });
+  renderContributors();
+}
+
+function formatDiffHtml(diffText) {
+  if (!diffText || typeof diffText !== 'string') return '';
+  var lines = diffText.split('\n');
+  var out = [];
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+    var escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    var first = line.charAt(0);
+    var cls = first === '+' ? 'resort-diff-add' : first === '-' ? 'resort-diff-remove' : 'resort-diff-context';
+    out.push('<span class="' + cls + '">' + escaped + '</span>');
+  }
+  return out.join('\n');
+}
+
+function toggleRevisionDiff(revId) {
+  var block = document.getElementById('revision-diff-' + revId);
+  var btn = document.getElementById('revision-diff-btn-' + revId);
+  if (!block || !btn) return;
+  if (block.style.display === 'none' || !block.style.display) {
+    block.style.display = 'block';
+    btn.textContent = 'Hide changes';
+  } else {
+    block.style.display = 'none';
+    btn.textContent = 'View changes';
+  }
+}
+
 async function loadRevisions() {
   var el = document.getElementById('revisions-list');
   if (!el) return;
@@ -114,12 +181,13 @@ async function loadRevisions() {
     var data = await resp.json();
     var list = (data && data.revisions) ? data.revisions : [];
     var currentUserId = (window.ywikiAuth && typeof ywikiAuth.getUserId === 'function') ? ywikiAuth.getUserId() : null;
+    updateContributorsFromRevisions(list);
     if (list.length === 0) {
       el.innerHTML = '<p class="resort-list-empty">No revisions yet.</p>';
     } else {
       el.innerHTML = list.map(function (r) {
         var ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : '';
-        var user = (r.userId || 'anonymous').replace(/</g, '&lt;');
+        var user = (r.userDisplayName || r.userId || 'anonymous').replace(/</g, '&lt;');
         var summary = (r.summary || 'Edit').replace(/</g, '&lt;');
         var status = (r.status || 'approved').toLowerCase();
         var statusLabel = status === 'pending' ? 'pending' : status === 'rejected' ? 'rejected' : 'accepted';
@@ -132,11 +200,20 @@ async function loadRevisions() {
           }
           actions += ' <button type="button" class="resort-revision-action resort-revision-reject" data-revision-id="' + (r.revisionId || '').replace(/"/g, '&quot;') + '" onclick="rejectRevision(this.getAttribute(\'data-revision-id\'))">Reject</button>';
         }
-        return '<div class="resort-revision-item"><span class="resort-revision-time">' + ts + '</span> <span class="resort-revision-user">' + user + '</span>: ' + summary + ' <span class="' + statusClass + '">(' + statusLabel + ')</span>' + actions + '</div>';
+        var revId = r.revisionId || '';
+        var revIdEsc = revId.replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+        var viewChanges = '';
+        var diffBlock = '';
+        if (r.diff) {
+          viewChanges = ' <button type="button" class="resort-revision-view-diff" id="revision-diff-btn-' + revId + '" onclick="toggleRevisionDiff(\'' + revIdEsc + '\')">View changes</button>';
+          diffBlock = '<div class="resort-revision-diff" id="revision-diff-' + revId + '" style="display:none"><pre class="resort-diff-pre">' + formatDiffHtml(r.diff) + '</pre></div>';
+        }
+        return '<div class="resort-revision-item"><div class="resort-revision-head"><span class="resort-revision-time">' + ts + '</span> <span class="resort-revision-user">' + user + '</span>: ' + summary + ' <span class="' + statusClass + '">(' + statusLabel + ')</span>' + actions + viewChanges + '</div>' + diffBlock + '</div>';
       }).join('');
     }
   } catch (e) {
     el.innerHTML = '<p class="resort-list-empty">Could not load revisions.</p>';
+    updateContributors([]);
   }
 }
 
@@ -226,12 +303,13 @@ async function loadComments() {
     if (!resp.ok) return;
     var data = await resp.json();
     var list = (data && data.comments) ? data.comments : [];
+    updateContributorsFromComments(list);
     if (list.length === 0) {
       el.innerHTML = '<p class="resort-list-empty">No comments yet.</p>';
     } else {
       el.innerHTML = list.map(function (c) {
         var ts = c.timestamp ? new Date(c.timestamp).toLocaleString() : '';
-        var user = c.userId || 'anonymous';
+        var user = (c.userDisplayName || c.userId || 'anonymous').replace(/</g, '&lt;');
         var content = (c.content || '').replace(/</g, '&lt;').replace(/\n/g, '<br/>');
         return '<div class="resort-comment-item"><span class="resort-comment-meta">' + user + ' · ' + ts + '</span><p class="resort-comment-content">' + content + '</p></div>';
       }).join('');

@@ -44,7 +44,9 @@
 
   function getLogoutUrl() {
     if (!config.configured || !config.domain) return null;
-    var redirectUri = encodeURIComponent(getBaseUrl());
+    // Must match exactly one of Cognito App client "Sign out URL(s)". Use wiki page so you land with CSS.
+    var logoutRedirect = getBaseUrl() + '/static/index.html';
+    var redirectUri = encodeURIComponent(logoutRedirect);
     return config.domain + '/logout?client_id=' + config.clientId + '&logout_uri=' + redirectUri;
   }
 
