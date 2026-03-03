@@ -147,11 +147,7 @@ Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS ne
 * [ ] Add log-query script
 * [ ] Add status script / CW dash
 
-### Phase 2 — Port to atlas backend + frontend
 
-* [ ] Implement wiki API in globalskiatlas_data (Python): revisions, moderation, storage.
-* [ ] Setup Swagger and API frontend in GlobalSkiAtlas_2 (or atlas backend).
-* [ ] Frontend resort-entry UI and wiki editing in GlobalSkiAtlas_2; retire or archive ywiki as reference.
 
 ### Notes on sam.yaml
 
