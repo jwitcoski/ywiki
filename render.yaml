@@ -1,0 +1,8 @@
+# Render Blueprint: one-click deploy from GitHub.
+# After connecting the repo, add env vars in Dashboard (COGNITO_*, DYNAMODB_TABLE_PREFIX, etc.) if needed.
+services:
+  - type: web
+    runtime: node
+    name: ywiki
+    buildCommand: npm install
+    startCommand: npm start

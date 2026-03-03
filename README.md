@@ -18,6 +18,16 @@ A simple Markdown wiki: **Node (Express)** server and static frontend. Optional 
 
 Open **http://localhost:8080**. Cognito: copy [.env.example](.env.example) to `.env` or use `project.local.properties` (see [Cognito](#cognito-optional)); restart after changing config.
 
+### Live demo (Render)
+
+Deploy a free live instance from this repo:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/jwitcoski/ywiki)
+
+1. Click the button, sign in to Render, and connect the repo.
+2. Render will use `render.yaml` (build: `npm install`, start: `npm start`). Use the URL it gives you (e.g. `https://ywiki-xxxx.onrender.com`).
+3. Optional: in the service **Environment** tab, add `COGNITO_USER_POOL_ID`, `COGNITO_CLIENT_ID`, `COGNITO_DOMAIN`, `COGNITO_REGION` and add the Render URL to your Cognito app client’s callback and sign-out URLs. Without Cognito, the app runs with in-memory storage and no sign-in.
+
 ## Setup
 
 ### Node (primary)
@@ -157,23 +167,28 @@ Without **DYNAMODB_TABLE_PREFIX**, the server uses an in-memory store (no AWS ne
   * CodeUri: from mvn
   * API Value: from @Path 
   
-## Open Questions
+## Resolved (was Open Questions)
 
-* How will revision history be stored?
-* Authorization: ownership, roles?
-* What MD front-end for edit vs display?
+* **Revision history** — Stored in DynamoDB (`WikiRevisions`); full content per revision, optional `diff` vs previous; list per page with status (pending/approved/rejected).
+* **Authorization** — Cognito for sign-in; ownership tracked (`userId` / `userDisplayName` on revisions and comments); no role hierarchy; another user must accept a proposed revision (proposer cannot accept own).
+* **MD front-end** — Edit: plain textarea (Markdown source). Display: Showdown.js rendering in the resort body.
 
 ## Use Cases
 
 ### Display public page
+`GET /wiki/:pageId` returns page JSON (no auth). The UI loads it and renders Markdown in the body; stats, map image, and revision history are shown.
 
 ### Display protected page
+Not implemented. All pages are publicly readable; only write operations (save, accept/reject, comments) require Cognito.
 
 ### Edit page
+User edits Markdown in the textarea, enters a required revision comment, and clicks Save. If signed in, `POST /wiki` creates a new revision (pending on existing pages; approved on new pages). Pending revisions appear in history until another user accepts or rejects.
 
 ### Authenticate (Login)
+Sign in link opens Cognito Hosted UI. After login, redirect to `/static/callback.html`; token is stored in `sessionStorage` and used for API calls. Sign out clears token and redirects to Cognito logout then back to the app.
 
 ### Search
+Not implemented. Pages are accessed by known `pageId` (e.g. from navigation or URL).
 
 ## Technology Choices
 
